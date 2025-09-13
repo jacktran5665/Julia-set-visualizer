@@ -43,50 +43,36 @@ init_c_imag = 0.27015
 # UI
 plt.style.use('dark_background')
 fig, ax = plt.subplots(figsize=(18.1, 9.2), facecolor='#101020')
-plt.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.05)
+# Make the grid smaller vertically to avoid slider collision
+plt.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.13)
 
+# Initial Julia set
 iterations = julia_set(complex(init_c_real, init_c_imag))
-
-im = ax.imshow(iterations, cmap=current_cmap, extent=[-2.5, 2.5, -2.5, 2.5])
+# Make the grid smaller in the plot area as well
+im = ax.imshow(iterations, cmap=current_cmap, extent=[-2.0, 2.0, -2.0, 2.0])
 title = ax.set_title(f'c = {init_c_real} + {init_c_imag}j', color='#7ecfff', fontsize=20, pad=8)
 ax.tick_params(colors='#7ecfff')
 ax.set_facecolor('#181828')
 ax.grid(False)
 
+# Slider axes
+ax_real = plt.axes([0.08, 0.01, 0.35, 0.03], facecolor='#222244')
+ax_imag = plt.axes([0.53, 0.01, 0.35, 0.03], facecolor='#222244')
 
+# Sliders for real and imaginary parts of c
+slider_real = Slider(ax_real, 'X-axis', -1.5, 1.5, valinit=init_c_real, color='#7ecfff')
+slider_imag = Slider(ax_imag, 'Y-axis', -1.5, 1.5, valinit=init_c_imag, color='#7ecfff')
 
-import matplotlib.animation as animation
-
-real_c = init_c_real
-imag_c = init_c_imag
-real_direction = 1  # 1 for increasing, -1 for decreasing
-imag_direction = 1
-real_speed = 0.01  # Adjust for smoothness and performance
-imag_speed = 0.016
-
-def animate(frame):
-    global real_c, imag_c, real_direction, imag_direction
-    real_c += real_direction * real_speed
-    if real_c > 1:
-        real_c = 1
-        real_direction = -1
-    elif real_c < -1:
-        real_c = -1
-        real_direction = 1
-    imag_c += imag_direction * imag_speed
-    if imag_c > 1:
-        imag_c = 1
-        imag_direction = -1
-    elif imag_c < -1:
-        imag_c = -1
-        imag_direction = 1
-    c = complex(real_c, imag_c)
+# Function to update plot when sliders are changed
+def update(val):
+    c = complex(slider_real.val, slider_imag.val)
     new_iterations = julia_set(c)
     im.set_data(new_iterations)
-    title.set_text(f'c = {real_c:.5f} + {imag_c:.5f}j')
-    return [im, title]
+    title.set_text(f'c = {slider_real.val:.5f} + {slider_imag.val:.5f}j')
+    fig.canvas.draw_idle()
 
-ani = animation.FuncAnimation(fig, animate, interval=5, blit=False)
+slider_real.on_changed(update)
+slider_imag.on_changed(update)
 
 from matplotlib.widgets import RadioButtons
 
@@ -97,31 +83,14 @@ cmap_selector = RadioButtons(ax_cmap, colormaps, active=colormaps.index(current_
 for label in cmap_selector.labels:
     label.set_color('#7ecfff')
 cmap_selector.ax.tick_params(colors='#7ecfff')
-
 def change_cmap(label):
     im.set_cmap(label)
     plt.draw()
 
 cmap_selector.on_clicked(change_cmap)
 
-# full screen
-try:
-    mng = plt.get_current_fig_manager()
-    # For TkAgg
-    if hasattr(mng, 'window') and hasattr(mng.window, 'state'):
-        mng.window.state('zoomed')
-    # For Qt5Agg
-    elif hasattr(mng, 'full_screen_toggle'):
-        mng.full_screen_toggle()
-    # For MacOSX backend
-    elif hasattr(mng, 'resize') and hasattr(mng, 'window'):
-        mng.resize(*mng.window.maxsize())
-except Exception as e:
-    print(f"[Info] Could not set full screen: {e}", file=sys.stderr)
-
-
 # Add a custom legend in the bottom right corner for axis description
-fig.text(0.99, 0.06, 'x-axis: Real number         \ny-axis: Imaginary number',
+fig.text(0.99, 0.06, 'X-axis: Real number         \nY-axis: Imaginary number',
          fontsize=12, color='#7ecfff', ha='right', va='bottom',
          bbox=dict(facecolor='#181828', edgecolor='#7ecfff', boxstyle='square,pad=0.5', alpha=0.85))
 
